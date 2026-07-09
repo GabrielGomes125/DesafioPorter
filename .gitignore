@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+
+# Ambiente local (segredos) — versionamos só o .env.example
+.env
+
+# Virtualenvs
+.venv/
+venv/
+
+# Ferramentas
+.ruff_cache/
+
+# Claude Code
+.claude/settings.local.json
+.claude/todos.local.json
+.claude/plans/
+.claude/tmp/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

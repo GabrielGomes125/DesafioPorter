@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    container_name: recurring-contracts-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${DB_USER:-odoo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-odoo}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER:-odoo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  odoo:
+    image: odoo:19
+    container_name: recurring-contracts-odoo
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${ODOO_PORT:-8069}:8069"
+      - "${ODOO_LONGPOLLING_PORT:-8072}:8072"
+    environment:
+      HOST: db
+      USER: ${DB_USER:-odoo}
+      PASSWORD: ${DB_PASSWORD:-odoo}
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./odoo.conf:/etc/odoo/odoo.conf
+      # Monta o diretório do repositório como addons_path. Cada subpasta com
+      # __manifest__.py (recurring_contracts e futuros módulos) vira um addon.
+      # O odoo.conf, .env e docker-compose.yml não são módulos e são ignorados
+      # pelo Odoo por não terem __manifest__.py.
+      - .:/mnt/extra-addons
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  odoo-web-data:
