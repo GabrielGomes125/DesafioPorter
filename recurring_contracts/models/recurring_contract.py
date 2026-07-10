@@ -201,3 +201,25 @@ class RecurringContract(models.Model):
         period.invoice_id = move
         self.date_next_invoice = next_date
         return move
+
+    @api.model
+    def _cron_generate_invoices(self):
+        today = fields.Date.context_today(self)
+        due = self.search(
+            [
+                ("state", "=", "active"),
+                ("date_next_invoice", "<=", today),
+            ]
+        )
+        expired = due.filtered(lambda c: c.date_end and c.date_end < today)
+        expired.action_close()
+        for contract in due - expired:
+            # savepoint por contrato: a falha de um não aborta os demais
+            try:
+                with self.env.cr.savepoint():
+                    contract._generate_invoice(today)
+            except Exception:
+                _logger.exception(
+                    "Falha ao gerar fatura do contrato %s; continuando.",
+                    contract.name,
+                )
