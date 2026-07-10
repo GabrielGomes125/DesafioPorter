@@ -12,6 +12,7 @@
         "data/ir_sequence_data.xml",
         "data/ir_cron_data.xml",
         "views/recurring_contract_views.xml",
+        "views/sale_order_views.xml",
     ],
     "installable": True,
     "application": True,
