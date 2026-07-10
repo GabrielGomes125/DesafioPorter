@@ -99,11 +99,26 @@ class RecurringContract(models.Model):
         store=True,
         currency_field="currency_id",
     )
+    invoice_ids = fields.Many2many(
+        "account.move",
+        string="Faturas",
+        compute="_compute_invoice_ids",
+    )
+    invoice_count = fields.Integer(
+        string="Qtde. de Faturas",
+        compute="_compute_invoice_ids",
+    )
 
     @api.depends("line_ids.price_subtotal")
     def _compute_amount_total(self):
         for contract in self:
             contract.amount_total = sum(contract.line_ids.mapped("price_subtotal"))
+
+    @api.depends("period_ids.invoice_id")
+    def _compute_invoice_ids(self):
+        for contract in self:
+            contract.invoice_ids = contract.period_ids.invoice_id
+            contract.invoice_count = len(contract.invoice_ids)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -146,6 +161,17 @@ class RecurringContract(models.Model):
 
     def action_reset_to_draft(self):
         self.write({"state": "draft"})
+
+    def action_view_invoices(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Faturas"),
+            "res_model": "account.move",
+            "view_mode": "list,form",
+            "domain": [("id", "in", self.invoice_ids.ids)],
+            "context": {"create": False},
+        }
 
     def _get_next_invoice_date(self, from_date):
         self.ensure_one()
