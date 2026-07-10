@@ -10,6 +10,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
+        "views/recurring_contract_views.xml",
     ],
     "installable": True,
     "application": True,

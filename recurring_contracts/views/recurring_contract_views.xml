@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recurring_contract_form" model="ir.ui.view">
+        <field name="name">recurring.contract.form</field>
+        <field name="model">recurring.contract</field>
+        <field name="arch" type="xml">
+            <form string="Contrato Recorrente">
+                <header>
+                    <button name="action_activate"
+                            string="Ativar"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state not in ('draft', 'suspended')"/>
+                    <button name="action_suspend"
+                            string="Suspender"
+                            type="object"
+                            invisible="state != 'active'"/>
+                    <button name="action_close"
+                            string="Encerrar"
+                            type="object"
+                            invisible="state in ('draft', 'closed')"/>
+                    <button name="action_reset_to_draft"
+                            string="Voltar a Rascunho"
+                            type="object"
+                            invisible="state != 'closed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,active,suspended,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="periodicity"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_next_invoice"/>
+                            <field name="date_end"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Itens" name="lines">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="quantity"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="price_subtotal"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recurring_contract_list" model="ir.ui.view">
+        <field name="name">recurring.contract.list</field>
+        <field name="model">recurring.contract</field>
+        <field name="arch" type="xml">
+            <list string="Contratos Recorrentes"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'active'"
+                  decoration-warning="state == 'suspended'"
+                  decoration-muted="state == 'closed'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="periodicity"/>
+                <field name="date_next_invoice"/>
+                <field name="date_end"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'active'"
+                       decoration-warning="state == 'suspended'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recurring_contract_search" model="ir.ui.view">
+        <field name="name">recurring.contract.search</field>
+        <field name="model">recurring.contract</field>
+        <field name="arch" type="xml">
+            <search string="Contratos Recorrentes">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter name="filter_draft" string="Rascunho"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_active" string="Ativo"
+                        domain="[('state', '=', 'active')]"/>
+                <filter name="filter_suspended" string="Suspenso"
+                        domain="[('state', '=', 'suspended')]"/>
+                <filter name="filter_closed" string="Encerrado"
+                        domain="[('state', '=', 'closed')]"/>
+                <group>
+                    <filter name="group_by_periodicity" string="Periodicidade"
+                            context="{'group_by': 'periodicity'}"/>
+                    <filter name="group_by_partner" string="Cliente"
+                            context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recurring_contract" model="ir.actions.act_window">
+        <field name="name">Contratos</field>
+        <field name="res_model">recurring.contract</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_recurring_contract_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crie seu primeiro contrato recorrente
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_recurring_root"
+              name="Contratos Recorrentes"
+              sequence="55"/>
+    <menuitem id="menu_recurring_contract"
+              name="Contratos"
+              parent="menu_recurring_root"
+              action="action_recurring_contract"
+              sequence="10"/>
+</odoo>
