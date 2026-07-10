@@ -6,9 +6,10 @@
     "category": "Sales",
     "license": "LGPL-3",
     "author": "Gabriel Gomes",
-    "depends": ["base"],
+    "depends": ["mail", "sale_management", "account", "product"],
     "data": [
         "security/ir.model.access.csv",
+        "data/ir_sequence_data.xml",
     ],
     "installable": True,
     "application": True,
