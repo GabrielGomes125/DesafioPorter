@@ -41,6 +41,7 @@
                             <field name="date_start"/>
                             <field name="date_next_invoice"/>
                             <field name="date_end"/>
+                            <field name="amount_total"/>
                         </group>
                     </group>
                     <notebook>
@@ -78,6 +79,8 @@
                 <field name="periodicity"/>
                 <field name="date_next_invoice"/>
                 <field name="date_end"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_total"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'draft'"
                        decoration-success="state == 'active'"

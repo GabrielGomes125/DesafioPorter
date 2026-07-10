@@ -1,5 +1,14 @@
+from dateutil.relativedelta import relativedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+_PERIODICITY_MONTHS = {
+    "monthly": 1,
+    "quarterly": 3,
+    "semiannual": 6,
+    "annual": 12,
+}
 
 
 class RecurringContract(models.Model):
@@ -74,6 +83,17 @@ class RecurringContract(models.Model):
         "contract_id",
         string="Itens",
     )
+    amount_total = fields.Monetary(
+        string="Valor Total",
+        compute="_compute_amount_total",
+        store=True,
+        currency_field="currency_id",
+    )
+
+    @api.depends("line_ids.price_subtotal")
+    def _compute_amount_total(self):
+        for contract in self:
+            contract.amount_total = sum(contract.line_ids.mapped("price_subtotal"))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -116,3 +136,7 @@ class RecurringContract(models.Model):
 
     def action_reset_to_draft(self):
         self.write({"state": "draft"})
+
+    def _get_next_invoice_date(self, from_date):
+        self.ensure_one()
+        return from_date + relativedelta(months=_PERIODICITY_MONTHS[self.periodicity])
