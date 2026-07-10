@@ -49,6 +49,51 @@ Ou por linha de comando (troque `<base>` pelo nome do seu banco):
 docker compose exec odoo odoo -d <base> -i recurring_contracts --stop-after-init
 ```
 
+## O módulo `recurring_contracts`
+
+Sistema de assinaturas para a CondoTech: clientes contratam produtos/serviços
+de forma recorrente e o sistema fatura automaticamente a cada período,
+reutilizando as estruturas nativas do Odoo (`res.partner`, `product.product`,
+`sale.order`, `account.move`).
+
+### Fluxo de uso
+
+1. **Criar o contrato** — menu **Contratos Recorrentes → Contratos → Novo**:
+   informe o cliente, a periodicidade (mensal, trimestral, semestral ou anual),
+   a data de início e, opcionalmente, a data de término (vazio = sem prazo).
+   Na aba **Itens**, adicione os produtos/serviços com quantidade e preço.
+2. **Ativar** — botão **Ativar** no topo do formulário (exige ao menos um
+   item). O contrato ganha o número sequencial `CTR/xxxxx` na criação e pode
+   ser **Suspenso** (pausa o faturamento) ou **Encerrado** a qualquer momento.
+3. **Faturamento automático** — a ação agendada
+   _“Contratos Recorrentes: gerar faturas”_ roda diariamente e, para cada
+   contrato **ativo** com **Próxima Fatura ≤ hoje**:
+   - gera **uma fatura de cliente postada** (`account.move`) com os itens do
+     contrato e avança a Próxima Fatura conforme a periodicidade;
+   - registra o período na aba **Períodos Faturados** — uma restrição UNIQUE
+     no banco garante **idempotência** (reexecutar o cron não duplica fatura);
+   - contratos com data de término vencida são **encerrados sem faturar**.
+
+   Para disparar manualmente: Configurações → Técnico → Ações Agendadas →
+   _Contratos Recorrentes: gerar faturas_ → **Executar manualmente**.
+4. **Aditivos** — no contrato ativo, o botão **Criar Aditivo** abre um pedido
+   de venda vinculado. Ao **confirmar** o pedido, as linhas são incorporadas
+   aos itens do contrato (com o pedido de origem rastreado) e passam a ser
+   cobradas nos próximos ciclos.
+5. **Rastreabilidade** — smart buttons **Faturas** e **Aditivos** no topo do
+   formulário; alterações de status/datas ficam no chatter (`mail.thread`).
+
+### Rodar os testes do módulo
+
+```bash
+docker compose exec odoo odoo -d <base> -u recurring_contracts \
+  --test-enable --test-tags /recurring_contracts \
+  --http-port=8079 --stop-after-init
+```
+
+Saída esperada: `0 failed, 0 error(s)`. (A porta alternativa evita conflito
+com o servidor já em execução no container.)
+
 ## Estrutura do repositório
 
 ```
@@ -60,7 +105,9 @@ DesafioPorter/                  # raiz do repositório (ambiente + módulos)
 └── recurring_contracts/        # módulo (sem nada de Docker dentro)
     ├── __manifest__.py
     ├── __init__.py
-    ├── models/
+    ├── models/                 # contrato, itens, períodos e sale.order
+    ├── data/                   # sequência CTR/ e ação agendada (cron)
+    ├── views/                  # contrato (form/list/search/menu) e pedido
     ├── security/
     │   └── ir.model.access.csv
     └── tests/
