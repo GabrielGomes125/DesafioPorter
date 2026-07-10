@@ -69,6 +69,11 @@ class RecurringContract(models.Model):
         tracking=True,
         copy=False,
     )
+    line_ids = fields.One2many(
+        "recurring.contract.line",
+        "contract_id",
+        string="Itens",
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -90,6 +95,14 @@ class RecurringContract(models.Model):
             if contract.date_end and contract.date_end < contract.date_start:
                 raise ValidationError(
                     _("A data de término não pode ser anterior à data de início.")
+                )
+
+    @api.constrains("state", "line_ids")
+    def _check_active_has_lines(self):
+        for contract in self:
+            if contract.state == "active" and not contract.line_ids:
+                raise ValidationError(
+                    _("Não é possível ativar um contrato sem itens.")
                 )
 
     def action_activate(self):
