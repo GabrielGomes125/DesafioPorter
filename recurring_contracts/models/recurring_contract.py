@@ -108,6 +108,15 @@ class RecurringContract(models.Model):
         string="Qtde. de Faturas",
         compute="_compute_invoice_ids",
     )
+    sale_order_ids = fields.One2many(
+        "sale.order",
+        "x_recurring_contract_id",
+        string="Pedidos (Aditivos)",
+    )
+    sale_order_count = fields.Integer(
+        string="Qtde. de Aditivos",
+        compute="_compute_sale_order_count",
+    )
 
     @api.depends("line_ids.price_subtotal")
     def _compute_amount_total(self):
@@ -119,6 +128,11 @@ class RecurringContract(models.Model):
         for contract in self:
             contract.invoice_ids = contract.period_ids.invoice_id
             contract.invoice_count = len(contract.invoice_ids)
+
+    @api.depends("sale_order_ids")
+    def _compute_sale_order_count(self):
+        for contract in self:
+            contract.sale_order_count = len(contract.sale_order_ids)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -215,6 +229,17 @@ class RecurringContract(models.Model):
             "res_model": "account.move",
             "view_mode": "list,form",
             "domain": [("id", "in", self.invoice_ids.ids)],
+            "context": {"create": False},
+        }
+
+    def action_view_sale_orders(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Aditivos"),
+            "res_model": "sale.order",
+            "view_mode": "list,form",
+            "domain": [("x_recurring_contract_id", "=", self.id)],
             "context": {"create": False},
         }
 
