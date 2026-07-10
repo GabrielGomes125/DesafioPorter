@@ -76,3 +76,13 @@ class RecurringContractLine(models.Model):
     def _compute_price_subtotal(self):
         for line in self:
             line.price_subtotal = line.quantity * line.price_unit
+
+    def _prepare_invoice_line_vals(self):
+        self.ensure_one()
+        return {
+            "product_id": self.product_id.id,
+            "name": self.name,
+            "quantity": self.quantity,
+            "price_unit": self.price_unit,
+            "product_uom_id": self.product_uom_id.id,
+        }

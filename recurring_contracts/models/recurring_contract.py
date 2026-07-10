@@ -1,7 +1,12 @@
-from dateutil.relativedelta import relativedelta
+import logging
 
-from odoo import _, api, fields, models
+from dateutil.relativedelta import relativedelta
+from psycopg2 import IntegrityError
+
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 _PERIODICITY_MONTHS = {
     "monthly": 1,
@@ -145,3 +150,54 @@ class RecurringContract(models.Model):
     def _get_next_invoice_date(self, from_date):
         self.ensure_one()
         return from_date + relativedelta(months=_PERIODICITY_MONTHS[self.periodicity])
+
+    def _prepare_invoice_vals(self, date_start, date_end):
+        self.ensure_one()
+        return {
+            "move_type": "out_invoice",
+            "partner_id": self.partner_id.id,
+            "company_id": self.company_id.id,
+            "currency_id": self.currency_id.id,
+            "invoice_date": date_start,
+            "invoice_origin": self.name,
+            "invoice_line_ids": [
+                Command.create(line._prepare_invoice_line_vals())
+                for line in self.line_ids
+            ],
+        }
+
+    def _generate_invoice(self, run_date):
+        """Fatura um período do contrato de forma idempotente.
+
+        A criação do período é protegida pela constraint UNIQUE
+        (contract_id, date_start): se o período já foi faturado (cron
+        reexecutado ou concorrente), o INSERT falha e o contrato é pulado
+        sem duplicar fatura.
+        """
+        self.ensure_one()
+        date_start = self.date_next_invoice or run_date
+        next_date = self._get_next_invoice_date(date_start)
+        date_end = next_date - relativedelta(days=1)
+        try:
+            with self.env.cr.savepoint():
+                period = self.env["recurring.contract.period"].create(
+                    {
+                        "contract_id": self.id,
+                        "date_start": date_start,
+                        "date_end": date_end,
+                    }
+                )
+        except IntegrityError:
+            _logger.info(
+                "Contrato %s já faturado para o período iniciado em %s; pulando.",
+                self.name,
+                date_start,
+            )
+            return self.env["account.move"]
+        move = self.env["account.move"].create(
+            self._prepare_invoice_vals(date_start, date_end)
+        )
+        move.action_post()
+        period.invoice_id = move
+        self.date_next_invoice = next_date
+        return move
