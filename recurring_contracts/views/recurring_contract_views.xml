@@ -58,6 +58,16 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Períodos Faturados" name="periods">
+                            <field name="period_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date_start"/>
+                                    <field name="date_end"/>
+                                    <field name="invoice_id"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>

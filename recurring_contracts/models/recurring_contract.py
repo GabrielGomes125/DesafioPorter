@@ -83,6 +83,11 @@ class RecurringContract(models.Model):
         "contract_id",
         string="Itens",
     )
+    period_ids = fields.One2many(
+        "recurring.contract.period",
+        "contract_id",
+        string="Períodos Faturados",
+    )
     amount_total = fields.Monetary(
         string="Valor Total",
         compute="_compute_amount_total",
