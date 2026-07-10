@@ -12,3 +12,9 @@ class SaleOrder(models.Model):
         help="Contrato recorrente ao qual este pedido será incorporado "
         "como aditivo ao ser confirmado.",
     )
+
+    def action_confirm(self):
+        res = super().action_confirm()
+        for order in self.filtered("x_recurring_contract_id"):
+            order.x_recurring_contract_id._add_lines_from_sale_order(order)
+        return res

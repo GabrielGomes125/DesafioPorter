@@ -53,6 +53,19 @@ class RecurringContractLine(models.Model):
         store=True,
         currency_field="currency_id",
     )
+    order_id = fields.Many2one(
+        "sale.order",
+        string="Pedido (Aditivo)",
+        readonly=True,
+        copy=False,
+        help="Pedido de venda que originou este item. Vazio = item original.",
+    )
+    sale_line_id = fields.Many2one(
+        "sale.order.line",
+        string="Linha do Pedido",
+        readonly=True,
+        copy=False,
+    )
 
     @api.depends("product_id")
     def _compute_name(self):

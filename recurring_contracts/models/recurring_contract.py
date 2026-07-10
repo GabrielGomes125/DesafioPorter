@@ -162,6 +162,51 @@ class RecurringContract(models.Model):
     def action_reset_to_draft(self):
         self.write({"state": "draft"})
 
+    def action_create_addendum(self):
+        self.ensure_one()
+        order = self.env["sale.order"].create(
+            {
+                "partner_id": self.partner_id.id,
+                "company_id": self.company_id.id,
+                "origin": self.name,
+                "x_recurring_contract_id": self.id,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Aditivo"),
+            "res_model": "sale.order",
+            "res_id": order.id,
+            "view_mode": "form",
+        }
+
+    def _add_lines_from_sale_order(self, order):
+        """Incorpora as linhas do pedido confirmado como itens do contrato.
+
+        Idempotente: linhas de pedido já incorporadas (sale_line_id presente)
+        e linhas de seção/nota (display_type) são ignoradas.
+        """
+        self.ensure_one()
+        incorporated = self.line_ids.sale_line_id
+        new_lines = order.order_line.filtered(
+            lambda line: not line.display_type and line not in incorporated
+        )
+        return self.env["recurring.contract.line"].create(
+            [
+                {
+                    "contract_id": self.id,
+                    "product_id": line.product_id.id,
+                    "name": line.name,
+                    "quantity": line.product_uom_qty,
+                    "price_unit": line.price_unit,
+                    "product_uom_id": line.product_uom_id.id,
+                    "order_id": order.id,
+                    "sale_line_id": line.id,
+                }
+                for line in new_lines
+            ]
+        )
+
     def action_view_invoices(self):
         self.ensure_one()
         return {

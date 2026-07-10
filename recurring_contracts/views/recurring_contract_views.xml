@@ -23,6 +23,10 @@
                             string="Voltar a Rascunho"
                             type="object"
                             invisible="state != 'closed'"/>
+                    <button name="action_create_addendum"
+                            string="Criar Aditivo"
+                            type="object"
+                            invisible="state != 'active'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,active,suspended,closed"/>
                 </header>
@@ -64,6 +68,7 @@
                                     <field name="price_unit"/>
                                     <field name="currency_id" column_invisible="1"/>
                                     <field name="price_subtotal"/>
+                                    <field name="order_id" optional="show"/>
                                 </list>
                             </field>
                         </page>
