@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_recurring_contract_user,recurring.contract user,model_recurring_contract,base.group_user,1,1,1,1
+access_recurring_contract_line_user,recurring.contract.line user,model_recurring_contract_line,base.group_user,1,1,1,1
