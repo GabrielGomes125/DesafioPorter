@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 from psycopg2 import IntegrityError
 
 from odoo import Command, _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -260,6 +260,31 @@ class RecurringContract(models.Model):
                 Command.create(line._prepare_invoice_line_vals())
                 for line in self.line_ids
             ],
+        }
+
+    def action_generate_invoice_now(self):
+        """Gera manualmente a fatura do período atual e abre a fatura criada.
+
+        Mesma lógica do cron, mas para um único contrato sob demanda. Se o
+        período atual já foi faturado, a idempotência devolve um move vazio e
+        avisamos o usuário em vez de gerar duplicata.
+        """
+        self.ensure_one()
+        if self.state != "active":
+            raise UserError(
+                _("Só é possível gerar faturas de contratos ativos.")
+            )
+        move = self._generate_invoice(fields.Date.context_today(self))
+        if not move:
+            raise UserError(
+                _("O período atual deste contrato já foi faturado.")
+            )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Fatura"),
+            "res_model": "account.move",
+            "res_id": move.id,
+            "view_mode": "form",
         }
 
     def _generate_invoice(self, run_date):
