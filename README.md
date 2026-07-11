@@ -30,7 +30,7 @@ docker compose logs -f odoo
 
 Quando aparecer `HTTP service (werkzeug) running`, acesse:
 
-👉 **http://localhost:8069**
+**http://localhost:8069**
 
 Na primeira vez, o Odoo pede para criar uma base de dados:
 
