@@ -15,6 +15,9 @@
         "views/recurring_contract_views.xml",
         "views/sale_order_views.xml",
     ],
+    "demo": [
+        "demo/recurring_contract_demo.xml",
+    ],
     "installable": True,
     "application": True,
 }

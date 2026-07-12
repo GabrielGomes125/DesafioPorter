@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_monitoring" model="product.product">
+        <field name="name">Monitoramento 24h</field>
+        <field name="type">service</field>
+        <field name="list_price">450.00</field>
+    </record>
+
+    <record id="product_support" model="product.product">
+        <field name="name">Suporte Técnico Remoto</field>
+        <field name="type">service</field>
+        <field name="list_price">120.00</field>
+    </record>
+
+    <record id="product_maintenance" model="product.product">
+        <field name="name">Manutenção Preventiva de Elevadores</field>
+        <field name="type">service</field>
+        <field name="list_price">890.00</field>
+    </record>
+
+    <!-- Ativo e com 2 ciclos em atraso: ao rodar o cron, o contrato se acerta
+         gerando as faturas dos períodos pendentes de uma vez. -->
+    <record id="contract_atrasado" model="recurring.contract">
+        <field name="partner_id" ref="base.res_partner_2"/>
+        <field name="periodicity">monthly</field>
+        <field name="date_start" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m-%d')"/>
+        <field name="state">active</field>
+        <field name="line_ids" eval="[
+            Command.create({'product_id': ref('product_monitoring'), 'quantity': 1}),
+            Command.create({'product_id': ref('product_support'), 'quantity': 2}),
+        ]"/>
+    </record>
+
+    <!-- Ativo e em dia: a próxima cobrança ainda não chegou, o cron não o toca. -->
+    <record id="contract_em_dia" model="recurring.contract">
+        <field name="partner_id" ref="base.res_partner_12"/>
+        <field name="periodicity">quarterly</field>
+        <field name="date_start" eval="(DateTime.today() + relativedelta(days=15)).strftime('%Y-%m-%d')"/>
+        <field name="state">active</field>
+        <field name="line_ids" eval="[
+            Command.create({'product_id': ref('product_maintenance'), 'quantity': 3}),
+        ]"/>
+    </record>
+
+    <!-- Vencido, mas com a próxima cobrança ainda no futuro: o cron precisa
+         encerrá-lo mesmo sem ter nada a faturar. -->
+    <record id="contract_vencido" model="recurring.contract">
+        <field name="partner_id" ref="base.res_partner_1"/>
+        <field name="periodicity">annual</field>
+        <field name="date_start" eval="(DateTime.today() - relativedelta(months=8)).strftime('%Y-%m-%d')"/>
+        <field name="date_next_invoice" eval="(DateTime.today() + relativedelta(months=4)).strftime('%Y-%m-%d')"/>
+        <field name="date_end" eval="(DateTime.today() - relativedelta(months=1)).strftime('%Y-%m-%d')"/>
+        <field name="state">active</field>
+        <field name="line_ids" eval="[
+            Command.create({'product_id': ref('product_monitoring'), 'quantity': 2}),
+        ]"/>
+    </record>
+
+    <!-- Rascunho: só passa a faturar depois de ativado. -->
+    <record id="contract_rascunho" model="recurring.contract">
+        <field name="partner_id" ref="base.res_partner_3"/>
+        <field name="periodicity">semiannual</field>
+        <field name="date_start" eval="(DateTime.today()).strftime('%Y-%m-%d')"/>
+        <field name="line_ids" eval="[
+            Command.create({'product_id': ref('product_support'), 'quantity': 5}),
+        ]"/>
+    </record>
+</odoo>
