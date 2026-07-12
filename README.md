@@ -49,10 +49,23 @@ Ou por linha de comando (troque `<base>` pelo nome do seu banco):
 docker compose run --rm odoo odoo -d <base> -i recurring_contracts --stop-after-init
 ```
 
-> **Para avaliar rápido:** crie a base com **"Carregar dados de demonstração"**
-> marcado. O módulo instala quatro contratos prontos — um em dia, um com dois
-> ciclos em atraso, um vencido e um em rascunho —, o suficiente para ver o cron
-> faturar, se acertar e encerrar sem cadastrar nada à mão.
+### Para avaliar rápido: base com dados de demonstração
+
+```bash
+docker compose run --rm odoo odoo -d demo_db -i recurring_contracts \
+  --with-demo --stop-after-init
+```
+
+O `--with-demo` é obrigatório: **desde a 19.0 o Odoo não instala dados de
+demonstração por padrão**. Pela interface, equivale a marcar _"Carregar dados de
+demonstração"_ ao criar a base.
+
+Isso traz quatro contratos que cobrem o que a rotina precisa decidir — um em
+dia, um com dois ciclos em atraso, um vencido e um em rascunho. Rodando a ação
+agendada (Configurações → Técnico → Ações Agendadas → _Contratos Recorrentes:
+gerar faturas_ → **Executar manualmente**), dá para ver de uma vez o
+faturamento, a recuperação do atraso e o encerramento automático, sem cadastrar
+nada à mão.
 
 ## O módulo `recurring_contracts`
 
