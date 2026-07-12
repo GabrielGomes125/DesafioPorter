@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import Command, fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo.tools import format_date
 
@@ -33,6 +33,17 @@ class TestRecurringContract(TransactionCase):
         }
         base.update(vals)
         return self.Contract.create(base)
+
+    def _create_addendum(self, contract, quantity=3):
+        order = self.env["sale.order"].browse(
+            contract.action_create_addendum()["res_id"]
+        )
+        order.order_line = [
+            Command.create(
+                {"product_id": self.product_b.id, "product_uom_qty": quantity}
+            )
+        ]
+        return order
 
     def test_next_invoice_date_by_periodicity(self):
         contract = self._create_contract()
@@ -189,15 +200,11 @@ class TestRecurringContract(TransactionCase):
         contract = self._create_contract()
         contract.action_activate()
 
-        action = contract.action_create_addendum()
-        order = self.env["sale.order"].browse(action["res_id"])
+        order = self._create_addendum(contract)
         self.assertEqual(order.x_recurring_contract_id, contract)
         self.assertEqual(order.partner_id, self.partner)
         self.assertEqual(order.state, "draft")
 
-        order.order_line = [
-            Command.create({"product_id": self.product_b.id, "product_uom_qty": 3})
-        ]
         order.action_confirm()
 
         self.assertEqual(len(contract.line_ids), 2)
@@ -215,3 +222,27 @@ class TestRecurringContract(TransactionCase):
         move = contract._generate_invoice()
         self.assertEqual(len(move.invoice_line_ids), 2)
         self.assertEqual(move.amount_untaxed, 200.0 + 90.0)
+
+    def test_addendum_order_is_not_invoiceable(self):
+        """O aditivo é cobrado pelo contrato; faturar o pedido seria cobrar duas vezes."""
+        contract = self._create_contract()
+        contract.action_activate()
+        order = self._create_addendum(contract)
+        order.action_confirm()
+
+        self.assertEqual(order.order_line.qty_to_invoice, 0)
+        self.assertEqual(order.invoice_status, "no")
+        with self.assertRaises(UserError):
+            order._create_invoices()
+
+    def test_cancel_addendum_removes_lines(self):
+        contract = self._create_contract()
+        contract.action_activate()
+        order = self._create_addendum(contract)
+        order.action_confirm()
+        self.assertEqual(len(contract.line_ids), 2)
+
+        order._action_cancel()
+
+        self.assertEqual(len(contract.line_ids), 1)
+        self.assertFalse(contract.line_ids.order_id)
