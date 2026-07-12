@@ -257,7 +257,7 @@ class RecurringContract(models.Model):
             "invoice_date": date_start,
             "invoice_origin": self.name,
             "invoice_line_ids": [
-                Command.create(line._prepare_invoice_line_vals())
+                Command.create(line._prepare_invoice_line_vals(date_start, date_end))
                 for line in self.line_ids
             ],
         }

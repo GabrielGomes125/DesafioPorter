@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import format_date
 
 
 @tagged("post_install", "-at_install")
@@ -89,6 +90,16 @@ class TestRecurringContract(TransactionCase):
             contract.date_next_invoice, self.today + relativedelta(months=1)
         )
         self.assertEqual(contract.invoice_count, 1)
+
+    def test_invoice_line_carries_period(self):
+        contract = self._create_contract()
+        contract.action_activate()
+        move = contract._generate_invoice()
+        period = contract.period_ids
+
+        description = move.invoice_line_ids.name
+        self.assertIn(format_date(self.env, period.date_start), description)
+        self.assertIn(format_date(self.env, period.date_end), description)
 
     def test_idempotency_same_period(self):
         contract = self._create_contract()

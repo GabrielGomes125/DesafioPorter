@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.tools import format_date
 
 
 class RecurringContractLine(models.Model):
@@ -90,11 +91,16 @@ class RecurringContractLine(models.Model):
         for line in self:
             line.price_subtotal = line.quantity * line.price_unit
 
-    def _prepare_invoice_line_vals(self):
+    def _prepare_invoice_line_vals(self, date_start, date_end):
         self.ensure_one()
+        period = _(
+            "Período: %(start)s a %(end)s",
+            start=format_date(self.env, date_start),
+            end=format_date(self.env, date_end),
+        )
         return {
             "product_id": self.product_id.id,
-            "name": self.name,
+            "name": f"{self.name}\n{period}",
             "quantity": self.quantity,
             "price_unit": self.price_unit,
             "product_uom_id": self.product_uom_id.id,
