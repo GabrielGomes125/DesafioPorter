@@ -262,8 +262,8 @@ class RecurringContract(models.Model):
             ],
         }
 
-    def _generate_invoice(self, run_date):
-        """Fatura um período do contrato de forma idempotente.
+    def _generate_invoice(self):
+        """Fatura o período corrente do contrato, de forma idempotente.
 
         A criação do período é protegida pela constraint UNIQUE
         (contract_id, date_start): se o período já foi faturado (cron
@@ -271,7 +271,7 @@ class RecurringContract(models.Model):
         sem duplicar fatura.
         """
         self.ensure_one()
-        date_start = self.date_next_invoice or run_date
+        date_start = self.date_next_invoice
         next_date = self._get_next_invoice_date(date_start)
         date_end = next_date - relativedelta(days=1)
         try:
@@ -298,6 +298,24 @@ class RecurringContract(models.Model):
         self.date_next_invoice = next_date
         return move
 
+    def _generate_invoices_until(self, run_date):
+        """Fatura todos os períodos em aberto até run_date.
+
+        Um contrato pode acumular mais de um período pendente (ativado com data
+        de início retroativa, cron parado por alguns dias, contrato reativado),
+        então uma execução pode gerar mais de uma fatura.
+        """
+        self.ensure_one()
+        moves = self.env["account.move"]
+        while self.date_next_invoice <= run_date:
+            move = self._generate_invoice()
+            if not move:
+                # Período já faturado: a próxima data não avança, e parar aqui
+                # é o que impede o laço de girar para sempre.
+                break
+            moves |= move
+        return moves
+
     @api.model
     def _cron_generate_invoices(self):
         today = fields.Date.context_today(self)
@@ -312,7 +330,7 @@ class RecurringContract(models.Model):
             # savepoint por contrato: a falha de um não aborta os demais
             try:
                 with self.env.cr.savepoint():
-                    contract._generate_invoice(today)
+                    contract._generate_invoices_until(today)
             except Exception:
                 _logger.exception(
                     "Falha ao gerar fatura do contrato %s; continuando.",
