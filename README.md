@@ -46,7 +46,7 @@ _Recurring Contracts_ e clique em **Instalar**.
 Ou por linha de comando (troque `<base>` pelo nome do seu banco):
 
 ```bash
-docker compose exec odoo odoo -d <base> -i recurring_contracts --stop-after-init
+docker compose run --rm odoo odoo -d <base> -i recurring_contracts --stop-after-init
 ```
 
 > **Para avaliar rápido:** crie a base com **"Carregar dados de demonstração"**
@@ -104,13 +104,16 @@ reutilizando as estruturas nativas do Odoo (`res.partner`, `product.product`,
 ### Rodar os testes do módulo
 
 ```bash
-docker compose exec odoo odoo -d <base> -u recurring_contracts \
-  --test-enable --test-tags /recurring_contracts \
-  --http-port=8079 --stop-after-init
+docker compose run --rm odoo odoo -d <base> -u recurring_contracts \
+  --test-enable --test-tags /recurring_contracts --stop-after-init
 ```
 
-Saída esperada: `0 failed, 0 error(s)`. (A porta alternativa evita conflito
-com o servidor já em execução no container.)
+Saída esperada: `0 failed, 0 error(s) of 16 tests`.
+
+> Os comandos de linha usam `docker compose run --rm` (e não `exec`) de
+> propósito: `run` passa pelo entrypoint da imagem, que injeta as credenciais
+> do banco vindas do `.env`. Um `docker compose exec` executa o binário direto,
+> sem entrypoint, e o Odoo tentaria o socket local em vez do serviço `db`.
 
 ## Estrutura do repositório
 
@@ -145,10 +148,10 @@ docker compose logs -f odoo
 docker compose restart odoo
 
 # Atualizar o módulo após mudanças (dados/estrutura/views)
-docker compose exec odoo odoo -d <base> -u recurring_contracts --stop-after-init
+docker compose run --rm odoo odoo -d <base> -u recurring_contracts --stop-after-init
 
 # Rodar os testes do módulo
-docker compose exec odoo odoo -d <base> -u recurring_contracts \
+docker compose run --rm odoo odoo -d <base> -u recurring_contracts \
   --test-enable --stop-after-init
 
 # Parar (mantém os dados)
