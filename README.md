@@ -49,6 +49,11 @@ Ou por linha de comando (troque `<base>` pelo nome do seu banco):
 docker compose exec odoo odoo -d <base> -i recurring_contracts --stop-after-init
 ```
 
+> **Para avaliar rápido:** crie a base com **"Carregar dados de demonstração"**
+> marcado. O módulo instala quatro contratos prontos — um em dia, um com dois
+> ciclos em atraso, um vencido e um em rascunho —, o suficiente para ver o cron
+> faturar, se acertar e encerrar sem cadastrar nada à mão.
+
 ## O módulo `recurring_contracts`
 
 Sistema de assinaturas para a CondoTech: clientes contratam produtos/serviços
@@ -66,22 +71,35 @@ reutilizando as estruturas nativas do Odoo (`res.partner`, `product.product`,
    item). O contrato ganha o número sequencial `CTR/xxxxx` na criação e pode
    ser **Suspenso** (pausa o faturamento) ou **Encerrado** a qualquer momento.
 3. **Faturamento automático** — a ação agendada
-   _“Contratos Recorrentes: gerar faturas”_ roda diariamente e, para cada
-   contrato **ativo** com **Próxima Fatura ≤ hoje**:
-   - gera **uma fatura de cliente postada** (`account.move`) com os itens do
-     contrato e avança a Próxima Fatura conforme a periodicidade;
-   - registra o período na aba **Períodos Faturados** — uma restrição UNIQUE
-     no banco garante **idempotência** (reexecutar o cron não duplica fatura);
-   - contratos com data de término vencida são **encerrados sem faturar**.
+   _“Contratos Recorrentes: gerar faturas”_ roda diariamente e:
+   - **encerra os contratos vencidos** (Data de Término no passado), sem
+     faturar — mesmo que a próxima cobrança deles ainda estivesse no futuro;
+   - para cada contrato **ativo** com **Próxima Fatura ≤ hoje**, gera uma
+     **fatura de cliente postada** (`account.move`) com os itens do contrato,
+     a descrição de cada linha trazendo o período coberto, e avança a Próxima
+     Fatura conforme a periodicidade;
+   - **se o contrato estiver atrasado**, fatura todos os períodos em aberto na
+     mesma execução (um contrato ativado com início retroativo, ou que ficou
+     sem cron por alguns dias, se acerta de uma vez);
+   - registra cada período na aba **Períodos Faturados** — uma restrição UNIQUE
+     no banco garante **idempotência** (reexecutar o cron não duplica fatura).
 
    Para disparar manualmente: Configurações → Técnico → Ações Agendadas →
    _Contratos Recorrentes: gerar faturas_ → **Executar manualmente**.
 4. **Aditivos** — no contrato ativo, o botão **Criar Aditivo** abre um pedido
    de venda vinculado. Ao **confirmar** o pedido, as linhas são incorporadas
    aos itens do contrato (com o pedido de origem rastreado) e passam a ser
-   cobradas nos próximos ciclos.
+   cobradas nos próximos ciclos. O pedido em si fica como **“Nada a Faturar”**:
+   quem cobra aquelas linhas é o contrato, então não há como faturá-las duas
+   vezes. **Cancelar** o aditivo remove do contrato os itens que ele trouxe
+   (as faturas já emitidas não são afetadas).
 5. **Rastreabilidade** — smart buttons **Faturas** e **Aditivos** no topo do
    formulário; alterações de status/datas ficam no chatter (`mail.thread`).
+
+> **Impostos:** o contrato mostra o **Valor por Ciclo** sem impostos. Eles são
+> calculados na emissão da fatura, a partir do produto e da posição fiscal do
+> cliente — assim uma mudança de alíquota vale já na próxima cobrança, em vez
+> de ficar congelada no contrato.
 
 ### Rodar os testes do módulo
 
@@ -108,8 +126,9 @@ DesafioPorter/                  # raiz do repositório (ambiente + módulos)
     ├── models/                 # contrato, itens, períodos e sale.order
     ├── data/                   # sequência CTR/ e ação agendada (cron)
     ├── views/                  # contrato (form/list/search/menu) e pedido
-    ├── security/
-    │   └── ir.model.access.csv
+    ├── security/               # acessos (csv) e regras multiempresa (ir.rule)
+    ├── demo/                   # contratos de exemplo para avaliar o fluxo
+    ├── static/description/     # ícone do app
     └── tests/
 ```
 
