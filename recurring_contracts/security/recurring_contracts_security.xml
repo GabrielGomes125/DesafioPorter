@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_recurring_contract_company" model="ir.rule">
+        <field name="name">Contrato Recorrente: multiempresa</field>
+        <field name="model_id" ref="model_recurring_contract"/>
+        <field name="domain_force">
+            ['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+    <record id="rule_recurring_contract_line_company" model="ir.rule">
+        <field name="name">Item de Contrato Recorrente: multiempresa</field>
+        <field name="model_id" ref="model_recurring_contract_line"/>
+        <field name="domain_force">
+            ['|', ('contract_id.company_id', '=', False),
+                  ('contract_id.company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+    <record id="rule_recurring_contract_period_company" model="ir.rule">
+        <field name="name">Período Faturado: multiempresa</field>
+        <field name="model_id" ref="model_recurring_contract_period"/>
+        <field name="domain_force">
+            ['|', ('contract_id.company_id', '=', False),
+                  ('contract_id.company_id', 'in', company_ids)]
+        </field>
+    </record>
+</odoo>

@@ -9,6 +9,7 @@
     "depends": ["mail", "sale_management", "account", "product"],
     "data": [
         "security/ir.model.access.csv",
+        "security/recurring_contracts_security.xml",
         "data/ir_sequence_data.xml",
         "data/ir_cron_data.xml",
         "views/recurring_contract_views.xml",

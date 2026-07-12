@@ -292,8 +292,10 @@ class RecurringContract(models.Model):
                 date_start,
             )
             return self.env["account.move"]
-        move = self.env["account.move"].create(
-            self._prepare_invoice_vals(date_start, date_end)
+        move = (
+            self.env["account.move"]
+            .with_company(self.company_id)
+            .create(self._prepare_invoice_vals(date_start, date_end))
         )
         move.action_post()
         period.invoice_id = move
