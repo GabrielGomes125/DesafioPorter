@@ -130,6 +130,24 @@ class TestRecurringContract(TransactionCase):
         self.assertEqual(expired.state, "closed")
         self.assertFalse(expired.period_ids)
 
+    def test_cron_closes_expired_even_when_not_due(self):
+        """Vencido com a próxima cobrança ainda no futuro também precisa encerrar.
+
+        Esse contrato não entra na busca de faturamento, mas o vencimento não
+        pode depender de ele ter algo a faturar.
+        """
+        expired = self._create_contract(
+            date_start=self.today - timedelta(days=60),
+            date_end=self.today - timedelta(days=1),
+            date_next_invoice=self.today + timedelta(days=30),
+        )
+        expired.action_activate()
+
+        self.Contract._cron_generate_invoices()
+
+        self.assertEqual(expired.state, "closed")
+        self.assertFalse(expired.period_ids)
+
     def test_addendum_flow(self):
         contract = self._create_contract()
         contract.action_activate()

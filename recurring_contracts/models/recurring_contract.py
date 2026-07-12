@@ -301,15 +301,14 @@ class RecurringContract(models.Model):
     @api.model
     def _cron_generate_invoices(self):
         today = fields.Date.context_today(self)
-        due = self.search(
-            [
-                ("state", "=", "active"),
-                ("date_next_invoice", "<=", today),
-            ]
-        )
-        expired = due.filtered(lambda c: c.date_end and c.date_end < today)
-        expired.action_close()
-        for contract in due - expired:
+        active_domain = [("state", "=", "active")]
+        # Encerrar os vencidos antes de faturar: um contrato que passou da data
+        # de término não gera fatura, e precisa ser encerrado mesmo que a
+        # próxima cobrança ainda esteja no futuro.
+        self.search(active_domain + [("date_end", "<", today)]).action_close()
+        for contract in self.search(
+            active_domain + [("date_next_invoice", "<=", today)]
+        ):
             # savepoint por contrato: a falha de um não aborta os demais
             try:
                 with self.env.cr.savepoint():
