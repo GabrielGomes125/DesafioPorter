@@ -6,11 +6,6 @@
         <field name="arch" type="xml">
             <form string="Contrato Recorrente">
                 <header>
-                    <button name="action_generate_invoice_now"
-                            string="Gerar Fatura"
-                            type="object"
-                            class="btn-primary"
-                            invisible="state != 'active'"/>
                     <button name="action_activate"
                             string="Ativar"
                             type="object"
