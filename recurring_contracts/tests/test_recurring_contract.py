@@ -50,12 +50,12 @@ class TestRecurringContract(TransactionCase):
                 f"Próxima data incorreta para periodicidade {periodicity}",
             )
 
-    def test_amount_total_compute(self):
+    def test_amount_untaxed_compute(self):
         contract = self._create_contract()
         contract.line_ids = [
             Command.create({"product_id": self.product_b.id, "quantity": 3})
         ]
-        self.assertEqual(contract.amount_total, 2 * 100.0 + 3 * 30.0)
+        self.assertEqual(contract.amount_untaxed, 2 * 100.0 + 3 * 30.0)
 
     def test_activate_requires_lines(self):
         contract = self.Contract.create({"partner_id": self.partner.id})

@@ -93,11 +93,13 @@ class RecurringContract(models.Model):
         "contract_id",
         string="Períodos Faturados",
     )
-    amount_total = fields.Monetary(
-        string="Valor Total",
-        compute="_compute_amount_total",
+    amount_untaxed = fields.Monetary(
+        string="Valor por Ciclo",
+        compute="_compute_amount_untaxed",
         store=True,
         currency_field="currency_id",
+        help="Soma dos itens, sem impostos. Os impostos são aplicados na emissão "
+        "da fatura, conforme o produto e a posição fiscal do cliente.",
     )
     invoice_ids = fields.Many2many(
         "account.move",
@@ -119,9 +121,9 @@ class RecurringContract(models.Model):
     )
 
     @api.depends("line_ids.price_subtotal")
-    def _compute_amount_total(self):
+    def _compute_amount_untaxed(self):
         for contract in self:
-            contract.amount_total = sum(contract.line_ids.mapped("price_subtotal"))
+            contract.amount_untaxed = sum(contract.line_ids.mapped("price_subtotal"))
 
     @api.depends("period_ids.invoice_id")
     def _compute_invoice_ids(self):
