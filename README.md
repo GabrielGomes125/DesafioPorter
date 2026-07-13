@@ -133,7 +133,7 @@ Saída esperada: `0 failed, 0 error(s) of 16 tests`.
 ```
 DesafioPorter/                  # raiz do repositório (ambiente + módulos)
 ├── docker-compose.yml          # ambiente: odoo (odoo:19) + db (postgres:16)
-├── odoo.conf                   # addons_path, conexão ao banco, dev mode
+├── odoo.conf                   # addons_path, admin_passwd, dev mode
 ├── .env.example                # modelo de variáveis (copie para .env)
 ├── README.md
 └── recurring_contracts/        # módulo (sem nada de Docker dentro)
@@ -179,11 +179,20 @@ docker compose down -v
 
 ## Desenvolvimento
 
-- O `odoo.conf` está com `dev_mode = reload,qweb,xml`: alterações em Python
-  (reload) e em views XML/QWeb são recarregadas sem rebuild da imagem. Mudanças
-  de estrutura de dados/menu ainda pedem um `-u recurring_contracts`.
 - A pasta do repositório é montada como volume no container (em
   `/mnt/extra-addons`), então editar os módulos no host reflete direto no Odoo.
+- **Views XML/QWeb** são relidas do arquivo a cada render (`dev_mode` inclui
+  `xml`): basta recarregar a página.
+- **Python não recarrega sozinho.** O `dev_mode` inclui `reload`, mas ele depende
+  de file-watching, que não atravessa o bind mount do Docker Desktop no Windows.
+  O Odoo importa o Python de um módulo **uma única vez, no start do servidor** —
+  depois de mexer num `.py`, rode `docker compose restart odoo`.
+
+  > Pular esse passo é justamente o que produz o erro _“o campo X não existe no
+  > modelo”_: a view nova é lida do disco, mas o modelo em memória ainda é o
+  > antigo. Reiniciar resolve — atualizar o módulo pela UI, não.
+
+- Mudanças em dados/estrutura/menu ainda pedem `-u recurring_contracts`.
 
 ## Portas
 
