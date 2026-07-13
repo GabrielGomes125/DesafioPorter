@@ -188,10 +188,6 @@ docker compose down -v
   O Odoo importa o Python de um módulo **uma única vez, no start do servidor** —
   depois de mexer num `.py`, rode `docker compose restart odoo`.
 
-  > Pular esse passo é justamente o que produz o erro _“o campo X não existe no
-  > modelo”_: a view nova é lida do disco, mas o modelo em memória ainda é o
-  > antigo. Reiniciar resolve — atualizar o módulo pela UI, não.
-
 - Mudanças em dados/estrutura/menu ainda pedem `-u recurring_contracts`.
 
 ## Portas
